@@ -1,7 +1,19 @@
 import { MessageSquare, Eye, Download } from 'lucide-react';
 import { Button } from './ui/button';
+import { useNavigate } from 'react-router';
+import { useState } from 'react';
+import { Loader } from 'lucide-react';
 
 export function BuilderShowcase() {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleNavigate = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      navigate('/compiler');
+    }, 500);
+  };
   return (
     <section className="py-20 px-6 bg-slate-900/30">
       <div className="container mx-auto">
@@ -74,8 +86,8 @@ export function BuilderShowcase() {
           </div>
 
           <div className="text-center mt-8">
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8">
-              Try Web Maker Free
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8" onClick={handleNavigate} disabled={isLoading}>
+              {isLoading ? <Loader className="w-4 h-4 animate-spin" /> : 'Try Web Maker Free'}
             </Button>
           </div>
         </div>

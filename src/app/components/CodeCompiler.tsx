@@ -1,11 +1,13 @@
 import { Button } from './ui/button';
 import { Play } from 'lucide-react';
 import { useState, useRef, type ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 
 export function CodeCompiler() {
   const [selectedLanguage, setSelectedLanguage] = useState<'html' | 'css' | 'js'>('html');
   const [output, setOutput] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const navigate = useNavigate();
 
   const codeExamples = {
     html: {
@@ -247,7 +249,7 @@ export function CodeCompiler() {
             </Button>
             <Button 
               className="bg-green-600 hover:bg-green-700 text-white text-sm"
-              onClick={handleRun}
+              onClick={() => navigate('/compiler')}
             >
               <Play className="w-4 h-4 mr-2" />
               Try now

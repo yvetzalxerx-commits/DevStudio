@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Loader } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import {
   Dialog,
   DialogTrigger,
@@ -16,6 +17,15 @@ import {
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleNavigate = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      navigate('/compiler');
+    }, 500);
+  };
 
   return (
     <Dialog>
@@ -45,8 +55,8 @@ export function Header() {
                 </DialogTrigger>
               </nav>
 
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                Start Building Free
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleNavigate} disabled={isLoading}>
+                {isLoading ? <Loader className="w-4 h-4 animate-spin" /> : 'Start Building Free'}
               </Button>
             </div>
 
@@ -98,8 +108,8 @@ export function Header() {
                 Sign In
               </button>
             </DialogTrigger>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-              Start Building Free
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleNavigate} disabled={isLoading}>
+              {isLoading ? <Loader className="w-4 h-4 animate-spin" /> : 'Start Building Free'}
             </Button>
           </div>
         </div>
