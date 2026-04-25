@@ -35,17 +35,13 @@ export function CodeCompiler() {
     css: {
       fileName: 'config.txt',
       code: [
-        'font-size: 16px',
-        'background: #ffffff',
-        'foreground: oklch(0.145 0 0)',
-        'card: #ffffff',
-        'card-foreground: oklch(0.145 0 0)',
-        'popover: oklch(1 0 0)',
-        'popover-foreground: oklch(0.145 0 0)',
-        'primary: #030213',
-        'primary-foreground: oklch(1 0 0)',
-        'secondary: oklch(0.95 0.0058 264.53)',
-        'secondary-foreground: #030213'
+        '#name {',
+        '  color: white;',
+        '  font-size: 2em;',
+        '  cursor: pointer;',
+        '  transition: all 0.3s ease;',
+        '}'
+
       ]
     },
     js: {
@@ -70,7 +66,7 @@ export function CodeCompiler() {
   const handleRun = () => {
     const htmlCode = codeExamples.html.code.join('\n');
     const jsCode = codeExamples.js.code.join('\n');
-    
+
     // Build complete HTML document
     const fullHtml = `
       <!DOCTYPE html>
@@ -105,14 +101,14 @@ export function CodeCompiler() {
         </style>
       </head>
       <body>
-        <h1 id="name">Lyna</h1>
+        <h1 id="name">DevStudio</h1>
         <script>
           ${jsCode}
         </script>
       </body>
       </html>
     `;
-    
+
     setOutput(fullHtml);
   };
 
@@ -121,7 +117,7 @@ export function CodeCompiler() {
 
     if (language === 'html') {
       // HTML syntax highlighting
-      const parts: ReactNode[] = [];      let key = 0;
+      const parts: ReactNode[] = []; let key = 0;
       // Match HTML tags, attributes, and text
       const tagRegex = /(<\/?[^>]+>|&\w+;)/g;
       let lastIndex = 0;
@@ -132,7 +128,7 @@ export function CodeCompiler() {
         if (match.index > lastIndex) {
           parts.push(<span key={key++} className="text-slate-300">{line.substring(lastIndex, match.index)}</span>);
         }
-        
+
         const tag = match[0];
         // Check if it's a closing tag or opening tag
         if (tag.includes('=')) {
@@ -150,10 +146,10 @@ export function CodeCompiler() {
         } else {
           parts.push(<span key={key++} className="text-blue-400">{tag}</span>);
         }
-        
+
         lastIndex = tagRegex.lastIndex;
       }
-      
+
       // Add remaining text
       if (lastIndex < line.length) {
         parts.push(<span key={key++} className="text-slate-300">{line.substring(lastIndex)}</span>);
@@ -165,21 +161,21 @@ export function CodeCompiler() {
       const keywords = /\b(const|let|var|function|return|if|else|for|while|document|addEventListener)\b/g;
       const strings = /(["'`])(.*?)\1/g;
       const comments = /(\/\/.*$)/g;
-      
+
       let result = line;
-      
+
       // Highlight comments first
       result = result.replace(comments, '<span class="text-slate-500">$1</span>');
-      
+
       // Highlight strings
       result = result.replace(strings, '<span class="text-green-400">$&</span>');
-      
+
       // Highlight keywords
       result = result.replace(keywords, '<span class="text-purple-400">$&</span>');
-      
+
       // Highlight methods
       result = result.replace(/\.(querySelector|addEventListener|style|log)/g, '.<span class="text-yellow-400">$1</span>');
-      
+
       return <span dangerouslySetInnerHTML={{ __html: result }} />;
     } else if (language === 'css') {
       // Config/CSS-like syntax highlighting
@@ -205,49 +201,46 @@ export function CodeCompiler() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <h2 className="text-3xl font-bold text-white">Code Compiler</h2>
           <div className="flex flex-wrap items-center gap-2 justify-end">
-            <Button 
+            <Button
               variant={selectedLanguage === 'html' ? 'default' : 'outline'}
-              size="sm" 
-              className={`text-xs ${
-                selectedLanguage === 'html' 
-                  ? 'bg-blue-600 hover:bg-blue-700' 
+              size="sm"
+              className={`text-xs ${selectedLanguage === 'html'
+                  ? 'bg-blue-600 hover:bg-blue-700'
                   : 'border-slate-700 text-slate-300 hover:bg-slate-700'
-              }`}
+                }`}
               onClick={() => {
                 setSelectedLanguage('html');
               }}
             >
               HTML
             </Button>
-            <Button 
+            <Button
               variant={selectedLanguage === 'css' ? 'default' : 'outline'}
-              size="sm" 
-              className={`text-xs ${
-                selectedLanguage === 'css' 
-                  ? 'bg-blue-600 hover:bg-blue-700' 
+              size="sm"
+              className={`text-xs ${selectedLanguage === 'css'
+                  ? 'bg-blue-600 hover:bg-blue-700'
                   : 'border-slate-700 text-slate-300 hover:bg-slate-700'
-              }`}
+                }`}
               onClick={() => {
                 setSelectedLanguage('css');
               }}
             >
               CSS
             </Button>
-            <Button 
+            <Button
               variant={selectedLanguage === 'js' ? 'default' : 'outline'}
-              size="sm" 
-              className={`text-xs ${
-                selectedLanguage === 'js' 
-                  ? 'bg-blue-600 hover:bg-blue-700' 
+              size="sm"
+              className={`text-xs ${selectedLanguage === 'js'
+                  ? 'bg-blue-600 hover:bg-blue-700'
                   : 'border-slate-700 text-slate-300 hover:bg-slate-700'
-              }`}
+                }`}
               onClick={() => {
                 setSelectedLanguage('js');
               }}
             >
               JS
             </Button>
-            <Button 
+            <Button
               className="bg-green-600 hover:bg-green-700 text-white text-sm"
               onClick={() => navigate('/compiler')}
             >
@@ -289,7 +282,7 @@ export function CodeCompiler() {
             </div>
             <div className="p-0 bg-slate-950 flex-1 overflow-hidden rounded-b-xl flex items-center justify-center">
               {output ? (
-                <iframe 
+                <iframe
                   ref={iframeRef}
                   srcDoc={output}
                   className="w-full h-full border-0"

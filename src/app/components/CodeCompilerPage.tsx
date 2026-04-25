@@ -12,7 +12,7 @@ interface ConsoleMessage {
 
 export function CodeCompilerPage() {
   const [selectedLanguage, setSelectedLanguage] = useState<'html' | 'css' | 'js'>('html');
-  const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
+  const [logs, setLogs] = useState<ConsoleMessage[]>([]);
   const [executionError, setExecutionError] = useState<string>('');
   const [iframeContent, setIframeContent] = useState<string>('');
   const [editorCode, setEditorCode] = useState({
@@ -24,11 +24,11 @@ export function CodeCompilerPage() {
     <title>Web Dev</title>
 </head>
 <body>
-    <h1 id="name">Lyna</h1>
+    <h1 id="name">DevStudio</h1>
 </body>
 </html>`,
     css: `#name {
-  color: blue;
+  color: white;
   font-size: 2em;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -36,7 +36,7 @@ export function CodeCompilerPage() {
     js: `const name = document.querySelector("#name");
 
 name.addEventListener("click", (e) => {
-  name.style.color = "red";
+  name.style.color = "khaki";
   name.style.fontWeight = "bold";
 });`
   });
@@ -75,14 +75,17 @@ name.addEventListener("click", (e) => {
   // Setup postMessage listener for console hijacking
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.source === iframeWindowRef.current) {
-        if (event.data.type === 'console') {
-          setConsoleMessages((prev) => [...prev, event.data.message]);
-        } else if (event.data.type === 'error') {
-          setExecutionError(event.data.error);
-        } else if (event.data.type === 'ready') {
-          // iframe is ready
-        }
+      const iframeWindow = iframeRef.current?.contentWindow;
+      if (event.source !== iframeWindow) {
+        return;
+      }
+
+      if (event.data?.type === 'console') {
+        setLogs((prev) => [...prev, event.data.message]);
+      } else if (event.data?.type === 'error') {
+        const errorMessage = event.data.error ?? 'Unknown iframe error';
+        setExecutionError(errorMessage);
+        setLogs((prev) => [...prev, { type: 'error', message: errorMessage, timestamp: Date.now() }]);
       }
     };
 
@@ -107,7 +110,7 @@ name.addEventListener("click", (e) => {
   const handleRun = () => {
     console.log('Run clicked');
     // Clear previous errors and console
-    setConsoleMessages([]);
+    setLogs([]);
     setExecutionError('');
 
     try {
@@ -176,41 +179,73 @@ name.addEventListener("click", (e) => {
         })();
       `;
 
-      // Create execution wrapper without blunt timeout
+      // Create execution wrapper with DOMContentLoaded to fix race condition
       const executionCode = `
         <script>
           ${consoleHijackCode}
           
-          (function() {
-            try {
-              ${jsCode}
-            } catch (error) {
-              const errorMessage = (error instanceof Error)
-                ? error.name + ': ' + error.message
-                : String(error);
-              window.parent.postMessage({
-                type: 'error',
-                error: errorMessage
-              }, '*');
-              console.error(errorMessage);
-            }
-          })();
+          window.addEventListener('DOMContentLoaded', function() {
+            (function() {
+              try {
+                ${jsCode}
+              } catch (error) {
+                const errorMessage = (error instanceof Error)
+                  ? error.name + ': ' + error.message
+                  : String(error);
+                window.parent.postMessage({
+                  type: 'error',
+                  error: errorMessage
+                }, '*');
+                console.error(errorMessage);
+              }
+            })();
+          });
         </script>
       `;
+
+      // Create base dark theme styles
+      const baseStyleTag = `<style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { 
+          background-color: #1e1e1e; 
+          color: #f8fafc; 
+          font-family: system-ui, -apple-system, sans-serif; 
+          padding: 1rem; 
+          min-height: 100%;
+        }
+      </style>`;
+      
+      // Create CSS injection
+      const styleTag = `<style>${cssCode}</style>`;
 
       // Append execution code before closing body
       const bodyClosingTag = '</body>';
       const bodyIndex = htmlCode.toLowerCase().lastIndexOf(bodyClosingTag);
+      const headClosingTag = '</head>';
+      const headIndex = htmlCode.toLowerCase().lastIndexOf(headClosingTag);
       
       let finalHtml: string;
-      if (bodyIndex !== -1) {
-        finalHtml = htmlCode.substring(0, bodyIndex) + executionCode + htmlCode.substring(bodyIndex);
+      // First inject base styles and user CSS into head
+      let htmlWithCss = htmlCode;
+      if (headIndex !== -1) {
+        htmlWithCss = htmlCode.substring(0, headIndex) + baseStyleTag + styleTag + htmlCode.substring(headIndex);
       } else {
-        finalHtml = htmlCode + executionCode + '</body></html>';
+        htmlWithCss = htmlCode.replace('<body', baseStyleTag + '<style>' + cssCode + '</style><body');
+      }
+      
+      // Then append execution code before closing body
+      const correctedBodyIndex = htmlWithCss.toLowerCase().lastIndexOf(bodyClosingTag);
+      if (correctedBodyIndex !== -1) {
+        finalHtml = htmlWithCss.substring(0, correctedBodyIndex) + executionCode + htmlWithCss.substring(correctedBodyIndex);
+      } else {
+        finalHtml = htmlWithCss + executionCode + '</body></html>';
       }
 
+      console.log('Bundled code length:', finalHtml.length);
       console.log('Bundled code:', finalHtml);
+      console.log('About to set iframeContent');
       setIframeContent(finalHtml);
+      console.log('iframeContent set');
 
       // Load the combined HTML into iframe - no blunt timeout
       if (iframeRef.current) {
@@ -335,43 +370,45 @@ name.addEventListener("click", (e) => {
             )}
 
             {/* Console and output area */}
-            <div className="flex-1 overflow-auto flex flex-col">
-              {/* Iframe output */}
-              <iframe
-                ref={iframeRef}
-                srcDoc={iframeContent}
-                className="flex-1 border-0 bg-white"
-                title="Code Output"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              />
-
-              {/* Console output */}
-              {consoleMessages.length > 0 && (
-                <div className="border-t border-slate-800 bg-slate-900/50 p-4 max-h-48 overflow-y-auto">
-                  <div className="font-mono text-xs">
-                    <div className="text-slate-400 mb-2">Console Output:</div>
-                    {consoleMessages.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className={`${
-                          msg.type === 'error'
-                            ? 'text-red-400'
-                            : msg.type === 'warn'
-                            ? 'text-yellow-400'
-                            : 'text-green-400'
-                        } mb-1`}
-                      >
-                        <span className="text-slate-500">[{msg.type}]</span> {msg.message}
-                      </div>
-                    ))}
-                  </div>
+<div className="flex-1 overflow-hidden flex flex-col">
+                {/* Iframe output */}
+                <div className="flex-1 overflow-hidden">
+                  <iframe
+                    ref={iframeRef}
+                    srcDoc={iframeContent}
+                    className="w-full h-full border-0 bg-transparent"
+                    title="Code Output"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
                 </div>
-              )}
-            </div>
 
-            {/* Empty state */}
-            {!executionError && consoleMessages.length === 0 && (
-              <div className="flex items-center justify-center h-full text-slate-500">
+                {/* Console output - only show if there are messages */}
+                {logs.length > 0 && (
+                  <div className="border-t border-slate-800 bg-slate-900/90 p-4 max-h-48 overflow-y-auto">
+                    <div className="font-mono text-xs">
+                      <div className="text-slate-400 mb-2">Console Output:</div>
+                      {logs.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={`${
+                            msg.type === 'error'
+                              ? 'text-red-400'
+                              : msg.type === 'warn'
+                              ? 'text-yellow-400'
+                              : 'text-green-400'
+                          } mb-1`}
+                        >
+                          <span className="text-slate-500">[{msg.type}]</span> {msg.message}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            {/* Empty state - only show if no content loaded yet */}
+            {!iframeContent && !executionError && logs.length === 0 && (
+              <div className="flex items-center justify-center h-full text-slate-500 bg-[#1e1e1e]">
                 <div className="text-center">
                   <div className="font-mono text-sm text-slate-400">// Click "Run" to see your program...</div>
                 </div>
