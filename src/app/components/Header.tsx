@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Menu, X, Loader } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogTrigger,
@@ -23,7 +23,7 @@ export function Header() {
   const handleNavigate = () => {
     setIsLoading(true);
     setTimeout(() => {
-      navigate('/compiler');
+      navigate('/webmaker');
     }, 500);
   };
 

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { KeyFeatures } from './components/KeyFeatures';
@@ -6,6 +6,7 @@ import { BuilderShowcase } from './components/BuilderShowcase';
 import { CodeHandbook } from './components/CodeHandbook';
 import { CodeCompiler } from './components/CodeCompiler';
 import { CodeCompilerPage } from './components/CodeCompilerPage';
+import { AIWebMaker } from './components/AIWebMaker';
 import { WhyDevStudio } from './components/WhyDevStudio';
 import { Footer } from './components/Footer';
 
@@ -32,6 +33,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/compiler" element={<CodeCompilerPage />} />
+        <Route path="/webmaker" element={<AIWebMaker />} />
       </Routes>
     </Router>
   );

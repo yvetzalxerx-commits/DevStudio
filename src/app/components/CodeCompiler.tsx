@@ -1,12 +1,13 @@
 import { Button } from './ui/button';
-import { Play } from 'lucide-react';
+import { Play, Loader } from 'lucide-react';
 import { useState, useRef, type ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 
 export function CodeCompiler() {
   const [selectedLanguage, setSelectedLanguage] = useState<'html' | 'css' | 'js'>('html');
   const [output, setOutput] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [isRunning, setIsRunning] = useState(false);
   const navigate = useNavigate();
 
   const codeExamples = {
@@ -242,10 +243,18 @@ export function CodeCompiler() {
             </Button>
             <Button
               className="bg-green-600 hover:bg-green-700 text-white text-sm"
-              onClick={() => navigate('/compiler')}
+              onClick={() => {
+                setIsRunning(true);
+                setTimeout(() => navigate('/compiler'), 500);
+              }}
+              disabled={isRunning}
             >
-              <Play className="w-4 h-4 mr-2" />
-              Try now
+              {isRunning ? (
+                <Loader className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4 mr-2" />
+              )}
+              {isRunning ? 'Loading...' : 'Try now'}
             </Button>
           </div>
         </div>
@@ -280,13 +289,13 @@ export function CodeCompiler() {
             <div className="bg-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700">
               <span className="text-slate-400 text-sm">Output</span>
             </div>
-            <div className="p-0 bg-slate-950 flex-1 overflow-hidden rounded-b-xl flex items-center justify-center">
+            <div className="p-0 bg-slate-950 flex-1 overflow-hidden rounded-b-xl min-h-[320px] sm:min-h-[400px] flex items-center justify-center">
               {output ? (
                 <iframe
                   ref={iframeRef}
                   srcDoc={output}
                   className="w-full h-full border-0"
-                  style={{ minHeight: '300px' }}
+                  style={{ minHeight: '320px' }}
                   sandbox="allow-scripts"
                 />
               ) : (

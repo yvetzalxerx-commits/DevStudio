@@ -1,7 +1,7 @@
 import { Button } from './ui/button';
-import { Play, ArrowLeft } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 
 interface ConsoleMessage {
@@ -71,6 +71,24 @@ name.addEventListener("click", (e) => {
     
     return code;
   };
+
+  // Load template from localStorage on mount
+  useEffect(() => {
+    const savedHtml = localStorage.getItem('devstudio_html');
+    const savedCss = localStorage.getItem('devstudio_css');
+    
+    if (savedHtml || savedCss) {
+      setEditorCode((prev) => ({
+        ...prev,
+        html: savedHtml || prev.html,
+        css: savedCss || prev.css,
+      }));
+      
+      // Clear localStorage after loading (optional - remove if you want to keep it)
+      // localStorage.removeItem('devstudio_html');
+      // localStorage.removeItem('devstudio_css');
+    }
+  }, []);
 
   // Setup postMessage listener for console hijacking
   useEffect(() => {
@@ -261,15 +279,13 @@ name.addEventListener("click", (e) => {
     <div className="h-screen bg-slate-950 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800">
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-slate-700 text-black hover:bg-slate-700 hover:text-white"
+        <button
           onClick={() => navigate('/')}
+          className="flex items-center gap-2 hover:opacity-80 transition"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Go back
-        </Button>
+          <img src="/DevStudio-Logo.png" alt="DevStudio" className="w-8 h-8 object-contain object-center" />
+          <span className="font-semibold text-white text-lg">DevStudio</span>
+        </button>
         <div className="flex items-center gap-2">
           <Button
             variant={selectedLanguage === 'html' ? 'default' : 'outline'}

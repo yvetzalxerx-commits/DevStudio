@@ -1,5 +1,5 @@
 import { Button } from './ui/button';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Loader } from 'lucide-react';
 
@@ -14,7 +14,7 @@ export function Hero() {
     }, 500);
   };
   return (
-    <section className="pt-32 pb-20 px-6">
+    <section className="pt-36 pb-20 px-6">
       <div className="container mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -26,7 +26,7 @@ export function Hero() {
             <p className="text-slate-400 text-lg mb-8 max-w-xl">
               The AI-powered coding assistant with an interactive drag-and-drop & code builder. Personalized paths, instant feedback, and gamified learning.
             </p>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6" onClick={handleNavigate} disabled={isLoading}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 inline-flex items-center justify-center min-w-[240px]" onClick={handleNavigate} disabled={isLoading}>
               {isLoading ? <Loader className="w-6 h-6 animate-spin" /> : 'Launch Interactive Builder'}
             </Button>
           </div>
