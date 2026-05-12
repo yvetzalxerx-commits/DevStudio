@@ -3,7 +3,7 @@
   refresh vs code application
 
   Open windows powershell as admin
-  input 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser'
+  input `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 ## Running the website server (localhost)
 
