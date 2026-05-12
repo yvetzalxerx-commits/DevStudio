@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
+import { getSelectedTemplate } from './compilerTemplateStore';
 
 interface ConsoleMessage {
   type: 'log' | 'warn' | 'error';
@@ -10,11 +11,16 @@ interface ConsoleMessage {
   timestamp: number;
 }
 
-export function CodeCompilerPage() {
+interface CodeCompilerPageProps {
+  embedded?: boolean;
+}
+
+export function CodeCompilerPage({ embedded }: CodeCompilerPageProps) {
   const [selectedLanguage, setSelectedLanguage] = useState<'html' | 'css' | 'js'>('html');
   const [logs, setLogs] = useState<ConsoleMessage[]>([]);
   const [executionError, setExecutionError] = useState<string>('');
   const [iframeContent, setIframeContent] = useState<string>('');
+  const [syncToast, setSyncToast] = useState<string | null>(null);
   const [editorCode, setEditorCode] = useState({
     html: `<!DOCTYPE html>
 <html lang="en">
@@ -72,22 +78,59 @@ name.addEventListener("click", (e) => {
     return code;
   };
 
-  // Load template from localStorage on mount
+  // Load selected template from in-memory store on mount
   useEffect(() => {
-    const savedHtml = localStorage.getItem('devstudio_html');
-    const savedCss = localStorage.getItem('devstudio_css');
-    
-    if (savedHtml || savedCss) {
-      setEditorCode((prev) => ({
-        ...prev,
-        html: savedHtml || prev.html,
-        css: savedCss || prev.css,
-      }));
-      
-      // Clear localStorage after loading (optional - remove if you want to keep it)
-      // localStorage.removeItem('devstudio_html');
-      // localStorage.removeItem('devstudio_css');
+    const selectedTemplate = getSelectedTemplate();
+    if (selectedTemplate) {
+      setEditorCode({
+        html: selectedTemplate.html,
+        css: selectedTemplate.css,
+        js: selectedTemplate.js,
+      });
     }
+  }, []);
+
+  // Listen for AI synced code changes (from same tab custom event or cross-tab storage event)
+  useEffect(() => {
+    const handleSyncEvent = (event: Event) => {
+      // Handle custom event from same tab
+      const customEvent = event as CustomEvent;
+      const html = customEvent.detail?.html;
+      const css = customEvent.detail?.css;
+      
+      setEditorCode((prev) => ({
+        html: html ?? prev.html,
+        css: css ?? prev.css,
+        js: prev.js,
+      }));
+
+      setSyncToast('Syncing AI code...');
+      setTimeout(() => setSyncToast(null), 2500);
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'devstudio_html' || event.key === 'devstudio_css') {
+        const storedHtml = localStorage.getItem('devstudio_html');
+        const storedCss = localStorage.getItem('devstudio_css');
+
+        setEditorCode((prev) => ({
+          html: storedHtml ?? prev.html,
+          css: storedCss ?? prev.css,
+          js: prev.js,
+        }));
+
+        setSyncToast('Syncing AI code...');
+        setTimeout(() => setSyncToast(null), 2500);
+      }
+    };
+
+    window.addEventListener('devstudio-sync', handleSyncEvent);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('devstudio-sync', handleSyncEvent);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   // Setup postMessage listener for console hijacking
@@ -205,7 +248,7 @@ name.addEventListener("click", (e) => {
           window.addEventListener('DOMContentLoaded', function() {
             (function() {
               try {
-                ${jsCode}
+                ${jsCode.trim() ? jsCode : ''}
               } catch (error) {
                 const errorMessage = (error instanceof Error)
                   ? error.name + ': ' + error.message
@@ -221,37 +264,22 @@ name.addEventListener("click", (e) => {
         </script>
       `;
 
-      // Create base dark theme styles
-      const baseStyleTag = `<style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { 
-          background-color: #1e1e1e; 
-          color: #f8fafc; 
-          font-family: system-ui, -apple-system, sans-serif; 
-          padding: 1rem; 
-          min-height: 100%;
-        }
-      </style>`;
-      
       // Create CSS injection
       const styleTag = `<style>${cssCode}</style>`;
 
       // Append execution code before closing body
       const bodyClosingTag = '</body>';
-      const bodyIndex = htmlCode.toLowerCase().lastIndexOf(bodyClosingTag);
       const headClosingTag = '</head>';
       const headIndex = htmlCode.toLowerCase().lastIndexOf(headClosingTag);
-      
+
       let finalHtml: string;
-      // First inject base styles and user CSS into head
       let htmlWithCss = htmlCode;
       if (headIndex !== -1) {
-        htmlWithCss = htmlCode.substring(0, headIndex) + baseStyleTag + styleTag + htmlCode.substring(headIndex);
-      } else {
-        htmlWithCss = htmlCode.replace('<body', baseStyleTag + '<style>' + cssCode + '</style><body');
+        htmlWithCss = htmlCode.substring(0, headIndex) + styleTag + htmlCode.substring(headIndex);
+      } else if (htmlCode.toLowerCase().includes('<body')) {
+        htmlWithCss = htmlCode.replace('<body', `<head>${styleTag}</head><body`);
       }
-      
-      // Then append execution code before closing body
+
       const correctedBodyIndex = htmlWithCss.toLowerCase().lastIndexOf(bodyClosingTag);
       if (correctedBodyIndex !== -1) {
         finalHtml = htmlWithCss.substring(0, correctedBodyIndex) + executionCode + htmlWithCss.substring(correctedBodyIndex);
@@ -277,61 +305,71 @@ name.addEventListener("click", (e) => {
 
   return (
     <div className="h-screen bg-slate-950 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 hover:opacity-80 transition"
-        >
-          <img src="/DevStudio-Logo.png" alt="DevStudio" className="w-8 h-8 object-contain object-center" />
-          <span className="font-semibold text-white text-lg">DevStudio</span>
-        </button>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={selectedLanguage === 'html' ? 'default' : 'outline'}
-            size="sm"
-            className={`text-xs ${
-              selectedLanguage === 'html'
-                ? 'bg-blue-600 hover:bg-blue-700'
-                : 'border-slate-700 text-slate-300 hover:bg-slate-700'
-            }`}
-            onClick={() => setSelectedLanguage('html')}
-          >
-            HTML
-          </Button>
-          <Button
-            variant={selectedLanguage === 'css' ? 'default' : 'outline'}
-            size="sm"
-            className={`text-xs ${
-              selectedLanguage === 'css'
-                ? 'bg-blue-600 hover:bg-blue-700'
-                : 'border-slate-700 text-slate-300 hover:bg-slate-700'
-            }`}
-            onClick={() => setSelectedLanguage('css')}
-          >
-            CSS
-          </Button>
-          <Button
-            variant={selectedLanguage === 'js' ? 'default' : 'outline'}
-            size="sm"
-            className={`text-xs ${
-              selectedLanguage === 'js'
-                ? 'bg-blue-600 hover:bg-blue-700'
-                : 'border-slate-700 text-slate-300 hover:bg-slate-700'
-            }`}
-            onClick={() => setSelectedLanguage('js')}
-          >
-            JS
-          </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700 text-white text-sm"
-            onClick={handleRun}
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Run
-          </Button>
+      {/* Sync toast indicator */}
+      {syncToast && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse text-sm font-medium">
+          <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+          {syncToast}
         </div>
-      </div>
+      )}
+
+      {/* Header - hidden when embedded in the Studio */}
+      {!embedded && (
+        <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 hover:opacity-80 transition"
+          >
+            <img src="/DevStudio-Logo.png" alt="DevStudio" className="w-8 h-8 object-contain object-center" />
+            <span className="font-semibold text-white text-lg">DevStudio</span>
+          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={selectedLanguage === 'html' ? 'default' : 'outline'}
+              size="sm"
+              className={`text-xs ${
+                selectedLanguage === 'html'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'border-slate-700 text-slate-300 hover:bg-slate-700'
+              }`}
+              onClick={() => setSelectedLanguage('html')}
+            >
+              HTML
+            </Button>
+            <Button
+              variant={selectedLanguage === 'css' ? 'default' : 'outline'}
+              size="sm"
+              className={`text-xs ${
+                selectedLanguage === 'css'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'border-slate-700 text-slate-300 hover:bg-slate-700'
+              }`}
+              onClick={() => setSelectedLanguage('css')}
+            >
+              CSS
+            </Button>
+            <Button
+              variant={selectedLanguage === 'js' ? 'default' : 'outline'}
+              size="sm"
+              className={`text-xs ${
+                selectedLanguage === 'js'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'border-slate-700 text-slate-300 hover:bg-slate-700'
+              }`}
+              onClick={() => setSelectedLanguage('js')}
+            >
+              JS
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white text-sm"
+              onClick={handleRun}
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Run
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex flex-1">
