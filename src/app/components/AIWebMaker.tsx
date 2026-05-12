@@ -4849,8 +4849,10 @@ body {
     setInputValue('');
     setIsLoading(true);
 
+    const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
