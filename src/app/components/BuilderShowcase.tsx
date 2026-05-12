@@ -29,7 +29,7 @@ export function BuilderShowcase() {
         <div className="flex justify-center gap-8 mb-12">
           {[
             { icon: MessageSquare, label: 'AI Prompt', subtitle: 'Describe your idea' },
-            { icon: Eye, label: 'Use Reader', subtitle: 'Review & refine' },
+            { icon: Eye, label: 'Live Preview', subtitle: 'Review & refine' },
             { icon: Download, label: 'Download Ready', subtitle: 'Export your code' }
           ].map((step, index) => {
             const Icon = step.icon;
@@ -75,12 +75,12 @@ export function BuilderShowcase() {
               </div>
 
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Describe what you want..."
-                  className="flex-1 bg-slate-800 text-white px-4 py-2 rounded border border-slate-700 focus:outline-none focus:border-blue-600"
-                />
-                <Button className="bg-blue-600 hover:bg-blue-700">Send</Button>
+                <div className="flex-1 bg-slate-800 text-slate-400 px-4 py-2 rounded border border-slate-700">
+                  Describe what you want...
+                </div>
+                <div className="bg-blue-600 text-white px-4 py-2 rounded font-medium">
+                  Send
+                </div>
               </div>
             </div>
           </div>

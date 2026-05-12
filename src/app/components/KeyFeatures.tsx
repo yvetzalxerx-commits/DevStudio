@@ -4,18 +4,18 @@ export function KeyFeatures() {
   const features = [
     {
       icon: Sparkles,
-      title: 'AI-Powered Assistance',
-      description: 'Instant feedback & guidance'
+      title: 'AI-Code Sync',
+      description: 'The AI reads your current editor state to ensure every change matches your existing code.'
     },
     {
       icon: Layout,
-      title: 'Hybrid Builder',
-      description: 'Drag-and-drop + real code editing'
+      title: 'Chat & Code Tabs',
+      description: 'Switch between natural language prompts and a professional editor to manage your project.'
     },
     {
       icon: Trophy,
-      title: 'Gamified Learning',
-      description: 'Track progress with real-world projects'
+      title: 'One-Click Export',
+      description: 'Instantly package your HTML, CSS, and JavaScript into a clean ZIP file for external use.'
     }
   ];
 

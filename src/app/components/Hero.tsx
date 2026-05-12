@@ -10,7 +10,7 @@ export function Hero() {
   const handleNavigate = () => {
     setIsLoading(true);
     setTimeout(() => {
-      navigate('/compiler');
+      navigate('/webmaker');
     }, 500);
   };
   return (

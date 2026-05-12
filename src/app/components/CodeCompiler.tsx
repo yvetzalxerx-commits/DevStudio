@@ -2,6 +2,7 @@ import { Button } from './ui/button';
 import { Play, Loader } from 'lucide-react';
 import { useState, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setSelectedTemplate } from './compilerTemplateStore';
 
 export function CodeCompiler() {
   const [selectedLanguage, setSelectedLanguage] = useState<'html' | 'css' | 'js'>('html');
@@ -260,6 +261,11 @@ export function CodeCompiler() {
                           className="bg-green-600 hover:bg-green-700 text-white text-sm"
                           onClick={() => {
                             setIsRunning(true);
+                            setSelectedTemplate({
+                              html: codeExamples.html.code.join('\n'),
+                              css: codeExamples.css.code.join('\n'),
+                              js: codeExamples.js.code.join('\n'),
+                            });
                             setTimeout(() => navigate('/compiler'), 500);
                           }}
                           disabled={isRunning}
